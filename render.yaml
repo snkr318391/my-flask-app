@@ -2,4 +2,5 @@ services:
   - type: web
     name: rss-aggregator
     buildCommand: pip install -r requirements.txt
-    startCommand: gunicorn main:app
+    startCommand: "gunicorn main:app" # Quotes are important here!
+    plan: free # or the plan you are using
