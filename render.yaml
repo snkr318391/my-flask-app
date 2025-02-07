@@ -1,0 +1,8 @@
+services:
+  - type: web
+    name: rss-aggregator
+    env: python
+    buildCommand: "pip install -r requirements.txt"
+    startCommand: "gunicorn main:app"  # Use gunicorn for production
+    plan: free # Choose the plan that suits your needs
+    port: 5000
