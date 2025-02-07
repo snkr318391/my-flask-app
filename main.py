@@ -1,3 +1,15 @@
+Here's my procfile:
+web: gunicorn main:app 
+
+Here's requirements.txt:
+
+Flask
+requests
+feedparser
+gunicorn
+
+and here's main.py:
+
 import feedparser
 import requests
 from flask import Flask, render_template
