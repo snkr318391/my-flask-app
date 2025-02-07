@@ -1,15 +1,10 @@
 import feedparser
 import requests
 from flask import Flask, render_template
-import time
-import logging
 
 app = Flask(__name__)
 
-# Configure logging
-logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
-
-
+# List of subreddits and websites to fetch top posts from
 subreddits_and_sites = {
     "technology": "https://www.reddit.com/r/technology/top/.rss?t=week",
     "nba": "https://www.reddit.com/r/nba/top/.rss?t=week",
@@ -27,23 +22,15 @@ subreddits_and_sites = {
     "aljazeera": "https://www.aljazeera.com/xml/rss/all.xml"
 }
 
-
+# Function to fetch posts from the RSS feed
 def fetch_posts(feed_url):
     headers = {
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
     }
-    try:
-        response = requests.get(feed_url, headers=headers, timeout=10)  # Add timeout
-        response.raise_for_status()  # Raise HTTPError for bad responses (4xx or 5xx)
-    except requests.exceptions.RequestException as e:
-        logging.error(f"Error fetching {feed_url}: {e}")
-        return []  # Return an empty list if the request fails
+    response = requests.get(feed_url, headers=headers)
 
-    try:
-        feed = feedparser.parse(response.content)
-    except Exception as e:
-        logging.error(f"Error parsing feed for {feed_url}: {e}")
-        return []
+    # Parse the RSS feed
+    feed = feedparser.parse(response.content)
 
     posts = []
     for entry in feed.entries[:5]:  # Display the first 5 headlines
@@ -53,7 +40,7 @@ def fetch_posts(feed_url):
 
     return posts
 
-
+# HTML Template for rendering posts
 def generate_html(subreddit_posts):
     html_content = """
     <html>
@@ -124,16 +111,14 @@ def index():
     for name, feed_url in subreddits_and_sites.items():
         posts = fetch_posts(feed_url)
         subreddit_posts[name] = posts
-        time.sleep(1)  # Add a 1-second delay between requests
 
     # Check if any posts were fetched
     if not any(subreddit_posts.values()):
-        return "No posts found. Reddit or websites may be blocking the request, or the feeds may be empty."
+        return "No posts found. Reddit or websites may be blocking the request."
 
     # Generate and return the HTML content
     html_content = generate_html(subreddit_posts)
     return html_content
-
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', debug=True)
