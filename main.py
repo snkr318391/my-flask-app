@@ -1,13 +1,8 @@
 import feedparser
 import requests
-from flask import Flask, render_template, jsonify
-import os
-import logging
+from flask import Flask, render_template
 
 app = Flask(__name__)
-
-# Configure logging
-logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
 # List of subreddits and websites to fetch top posts from
 subreddits_and_sites = {
@@ -32,27 +27,16 @@ def fetch_posts(feed_url):
     headers = {
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
     }
-    try:
-        response = requests.get(feed_url, headers=headers, timeout=10)
-        response.raise_for_status()  # Raise HTTPError for bad responses (4xx or 5xx)
-        logging.info(f"Successfully fetched {feed_url}") #Add logging
-    except requests.exceptions.RequestException as e:
-        logging.error(f"Error fetching {feed_url}: {e}")
-        return []
+    response = requests.get(feed_url, headers=headers)
 
-    try:
-        feed = feedparser.parse(response.content)
-        logging.info(f"Successfully parsed feed for {feed_url}") #Add logging
-    except Exception as e:
-        logging.error(f"Error parsing feed for {feed_url}: {e}")
-        return []
+    # Parse the RSS feed
+    feed = feedparser.parse(response.content)
 
     posts = []
     for entry in feed.entries[:5]:  # Display the first 5 headlines
         title = entry.title
         link = entry.link
         posts.append({"title": title, "link": link})
-    logging.info(f"Found {len(posts)} posts from {feed_url}")
 
     return posts
 
@@ -121,7 +105,6 @@ def generate_html(subreddit_posts):
 
 @app.route('/')
 def index():
-    logging.info("Index route accessed") #Let us know we accessed this route
     subreddit_posts = {}
 
     # Fetch top posts from each subreddit or website
@@ -131,20 +114,11 @@ def index():
 
     # Check if any posts were fetched
     if not any(subreddit_posts.values()):
-        logging.warning("No posts found for any subreddit/website")
         return "No posts found. Reddit or websites may be blocking the request."
 
     # Generate and return the HTML content
     html_content = generate_html(subreddit_posts)
-    logging.info("HTML content generated") #let us know
-    print(html_content) #To see if the HTML is being made
     return html_content
 
-@app.route('/health')
-def health_check():
-    return jsonify({"status": "ok"}), 200
-
 if __name__ == '__main__':
-    port = int(os.environ.get('PORT', 5000)) # Get port from environment or use 5000
-    logging.info(f"Starting app on port {port}") # Make sure the app has the port
-    app.run(host='0.0.0.0', port=port, debug=False) # Listen on the specified port, never run debug=True in production
+    app.run(host='0.0.0.0', debug=True)
