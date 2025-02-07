@@ -1,20 +1,14 @@
-Here's my procfile:
-web: gunicorn main:app 
-
-Here's requirements.txt:
-
-Flask
-requests
-feedparser
-gunicorn
-
-and here's main.py:
-
 import feedparser
 import requests
 from flask import Flask, render_template
+import os
+import logging
 
 app = Flask(__name__)
+
+# Configure Logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 # List of subreddits and websites to fetch top posts from
 subreddits_and_sites = {
@@ -27,7 +21,7 @@ subreddits_and_sites = {
     "geopolitics": "https://www.reddit.com/r/geopolitics/top/.rss?t=week",
     "bestof": "https://www.reddit.com/r/bestof/top/.rss?t=week",
     "truereddit": "https://www.reddit.com/r/truereddit/top/.rss?t=week",
-    "thenation": "https://www.thenation.com/feed/?post_type=article&subject=politics",  # Updated RSS feed
+    "thenation": "https://www.thenation.com/feed/?post_type=article&subject=politics",
     "muslimskeptic": "https://muslimskeptic.com/feed/",
     "theintercept": "https://theintercept.com/feed/",
     "slashdot": "http://rss.slashdot.org/Slashdot/slashdotMain",
@@ -37,9 +31,17 @@ subreddits_and_sites = {
 # Function to fetch posts from the RSS feed
 def fetch_posts(feed_url):
     headers = {
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+        "User-Agent": ("Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+                       "AppleWebKit/537.36 (KHTML, like Gecko) "
+                       "Chrome/120.0.0.0 Safari/537.36")
     }
-    response = requests.get(feed_url, headers=headers)
+    try:
+        logger.info(f"Fetching posts from {feed_url}")
+        response = requests.get(feed_url, headers=headers, timeout=10)
+        response.raise_for_status()
+    except requests.RequestException as e:
+        logger.error(f"Error fetching {feed_url}: {e}")
+        return []
 
     # Parse the RSS feed
     feed = feedparser.parse(response.content)
@@ -100,13 +102,14 @@ def generate_html(subreddit_posts):
     <body>
         <div class="container">
             <h1>Top Posts of the Week</h1>
-            """
+    """
 
     # Loop through each subreddit/website and add its posts
     for subreddit_or_site, posts in subreddit_posts.items():
-        html_content += f"<h2>{subreddit_or_site}</h2>"
-        for post in posts:
-            html_content += f'<div class="post"><a href="{post["link"]}" target="_blank">{post["title"]}</a></div>'
+        if posts:  # Only display if there are posts
+            html_content += f"<h2>{subreddit_or_site.capitalize()}</h2>"
+            for post in posts:
+                html_content += f'<div class="post"><a href="{post["link"]}" target="_blank">{post["title"]}</a></div>'
 
     html_content += """
         </div>
@@ -132,5 +135,5 @@ def index():
     html_content = generate_html(subreddit_posts)
     return html_content
 
-if __name__ == '__main__':
-    app.run(host='0.0.0.0', debug=True)
+# Removed the development server run command
+# Deployment will be handled by Gunicorn using the Procfile
