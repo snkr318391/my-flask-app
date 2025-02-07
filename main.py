@@ -24,16 +24,14 @@ subreddits_and_sites = {
 
 # Function to fetch posts from the RSS feed
 def fetch_posts(feed_url):
-    session = requests.Session()
-    session.headers.update({
+    headers = {
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
-    })
-    
-    response = session.get(feed_url)
-    
+    }
+    response = requests.get(feed_url, headers=headers)
+
     # Parse the RSS feed
     feed = feedparser.parse(response.content)
-    
+
     posts = []
     for entry in feed.entries[:5]:  # Display the first 5 headlines
         title = entry.title
