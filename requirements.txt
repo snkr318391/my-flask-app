@@ -1,5 +1,4 @@
 Flask
 requests
 feedparser
-Flask-Caching
 gunicorn
